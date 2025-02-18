@@ -13,6 +13,7 @@ from .entities import (
     PlayerMode,
     Score,
     WelcomeMessage,
+    GameCounter
 )
 from .utils import GameConfig, Images, Sounds, Window
 
@@ -35,6 +36,7 @@ class Flappy:
         )
 
     async def start(self):
+        self.game_counter = GameCounter(self.config)
         while True:
             self.background = Background(self.config)
             self.floor = Floor(self.config)
@@ -85,6 +87,7 @@ class Flappy:
     async def play(self):
         self.score.reset()
         self.player.set_mode(PlayerMode.NORMAL)
+        self.game_counter.add()
 
         while True:
             if self.player.collided(self.pipes, self.floor):
@@ -104,6 +107,7 @@ class Flappy:
             self.pipes.tick()
             self.score.tick()
             self.player.tick()
+            self.game_counter.tick()
 
             pygame.display.update()
             await asyncio.sleep(0)
@@ -128,6 +132,7 @@ class Flappy:
             self.pipes.tick()
             self.score.tick()
             self.player.tick()
+            self.game_counter.tick()
             self.game_over_message.tick()
 
             self.config.tick()

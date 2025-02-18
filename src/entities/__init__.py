@@ -6,6 +6,7 @@ from .pipe import Pipe, Pipes
 from .player import Player, PlayerMode
 from .score import Score
 from .welcome_message import WelcomeMessage
+from .game_counter import GameCounter
 
 __all__ = [
     "Background",
@@ -16,4 +17,5 @@ __all__ = [
     "Score",
     "Entity",
     "WelcomeMessage",
+    "GameCounter",
 ]
