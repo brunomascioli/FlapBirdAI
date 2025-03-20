@@ -82,9 +82,6 @@ class PerceptronBot:
                 if self.flappy.player.collided(
                     self.flappy.pipes, self.flappy.floor
                 ):
-                    correct_decision = int(not self.last_decision)
-                    self.update_model(self.last_features, correct_decision)
-
                     # Aguarda a reinicialização do jogo automaticamente
                     await asyncio.sleep(1.5)
                     self._flap()
