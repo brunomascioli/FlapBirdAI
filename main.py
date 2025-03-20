@@ -8,7 +8,7 @@ async def main():
     flappy = Flappy()
 
     await asyncio.gather(
-        flappy.start(), PerceptronBot(flappy, train=False).start()
+        flappy.start(), PerceptronBot(flappy, train=True).start()
     )
 
 

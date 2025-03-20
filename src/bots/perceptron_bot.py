@@ -58,15 +58,9 @@ class PerceptronBot:
             midpoint[1] - self.flappy.player.cy,
         )
 
-    def decide_to_flap(self, features):
-        if self.trained:
-            return self.model.predict([features])[0] == 1
-        else:
-            # Decisão simples inicial
-            return features[1] > 0
-
     async def start(self):
         print("Iniciando com perceptron")
+        last_score = 0
         while True:
             # Certifique-se que o jogo esteja rodando
             if hasattr(self.flappy, "player") and hasattr(self.flappy, "pipes"):
@@ -92,12 +86,13 @@ class PerceptronBot:
                     self.update_model(self.last_features, correct_decision)
 
                     # Aguarda a reinicialização do jogo automaticamente
-                    await asyncio.sleep(0.7)
+                    await asyncio.sleep(1.5)
                     self._flap()
-                elif self.flappy.player.crossed:
+                elif last_score < self.flappy.score.score:
                     if self.train:
                         correct_decision = int(self.last_decision)
                         self.update_model(self.last_features, correct_decision)
+                    last_score = self.flappy.score.score
 
             await asyncio.sleep(0.001)
 
