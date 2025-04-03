@@ -70,7 +70,7 @@ class PerceptronBot:
                 if self.trained:
                     decision = self.model.predict([features])[0]
                 else:
-                    decision = int(features[1] > 0)
+                    decision = int(self.flappy.player.cy > midpoint[1])
 
                 if decision:
                     self._flap()
@@ -83,10 +83,11 @@ class PerceptronBot:
                     self.flappy.pipes, self.flappy.floor
                 ):
                     # Aguarda a reinicialização do jogo automaticamente
-                    await asyncio.sleep(1.5)
+                    await asyncio.sleep(2)
                     self._flap()
                 elif last_score < self.flappy.score.score:
                     if self.train:
+                        print("Salvando modelo")
                         correct_decision = int(self.last_decision)
                         self.update_model(self.last_features, correct_decision)
                     last_score = self.flappy.score.score
@@ -122,7 +123,6 @@ class PerceptronBot:
     def save_model(self):
         with open(self.model_path, "wb") as f:
             pickle.dump(self.model, f)
-        print("Modelo salvo automaticamente.")
 
     def load_model(self):
         with open(self.model_path, "rb") as f:
