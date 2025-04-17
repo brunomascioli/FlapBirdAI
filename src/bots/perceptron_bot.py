@@ -10,14 +10,11 @@ from src.flappy import Flappy
 
 
 class PerceptronBot:
-    def __init__(self, flappy: Flappy, train: bool = False):
+    def __init__(self, flappy: Flappy):
         self.flappy = flappy
         self.model = Perceptron(max_iter=1000, tol=1e-3, warm_start=True)
         self.last_features = None
         self.last_decision = None
-        self.train = train
-
-        print("Treinando: ", self.train)
 
         if os.path.exists(self.model_path):
             self.load_model()
@@ -67,10 +64,10 @@ class PerceptronBot:
                 midpoint = self._get_midpoint_between_pipes()
                 features = self._get_distance_to_midpoint(midpoint)
 
-                if self.trained:
-                    decision = self.model.predict([features])[0]
-                else:
-                    decision = int(self.flappy.player.cy > midpoint[1])
+                if not self.trained:
+                    self.update_model(features, 1)
+
+                decision = self.model.predict([features])[0]
 
                 if decision:
                     self._flap()
@@ -82,11 +79,20 @@ class PerceptronBot:
                 if self.flappy.player.collided(
                     self.flappy.pipes, self.flappy.floor
                 ):
+                    if (
+                        self.flappy.score.score == 0
+                    ) and self.flappy.isTraining():
+                        print("Salvando modelo")
+                        correct_decision = int(not self.last_decision)
+                        self.update_model(self.last_features, correct_decision)
                     # Aguarda a reinicialização do jogo automaticamente
-                    await asyncio.sleep(2)
+                    if self.flappy.isTraining():
+                        await asyncio.sleep(0.1)
+                    else:
+                        await asyncio.sleep(2)
                     self._flap()
                 elif last_score < self.flappy.score.score:
-                    if self.train:
+                    if self.flappy.isTraining():
                         print("Salvando modelo")
                         correct_decision = int(self.last_decision)
                         self.update_model(self.last_features, correct_decision)
@@ -98,26 +104,12 @@ class PerceptronBot:
         X = np.array([features])
         y = np.array([correct_decision])
 
-        if not self.trained:
-            # Na primeira vez, treine com as duas classes artificialmente
-            X_init = np.array(
-                [
-                    [0, -10],  # Exemplo fictício para classe 1 (pular)
-                    [0, 10],  # Exemplo fictício para classe 0 (não pular)
-                ]
-            )
-            y_init = np.array([1, 0])
-
-            # Adiciona o exemplo real obtido no jogo
-            X_init = np.vstack([X_init, X])
-            y_init = np.append(y_init, y)
-
-            self.model.fit(X_init, y_init)
-            self.trained = True
-            print("Modelo treinado inicialmente com classes artificiais.")
+        if not hasattr(self.model, "classes_"):
+            self.model.partial_fit(X, y, classes=np.array([0, 1]))
         else:
             self.model.partial_fit(X, y)
 
+        print(self.model.coef_, self.model.intercept_)
         self.save_model()
 
     def save_model(self):

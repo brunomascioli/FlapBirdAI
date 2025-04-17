@@ -5,11 +5,9 @@ from src.flappy import Flappy
 
 
 async def main():
-    flappy = Flappy()
+    flappy = Flappy(train=True)
 
-    await asyncio.gather(
-        flappy.start(), PerceptronBot(flappy, train=True).start()
-    )
+    await asyncio.gather(flappy.start(), PerceptronBot(flappy).start())
 
 
 if __name__ == "__main__":
