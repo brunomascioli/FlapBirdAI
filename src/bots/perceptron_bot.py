@@ -15,6 +15,7 @@ class PerceptronBot:
         self.model = Perceptron(max_iter=1000, tol=1e-3, warm_start=True)
         self.last_features = None
         self.last_decision = None
+        self.countInitialErrors = 0
 
         if os.path.exists(self.model_path):
             self.load_model()
@@ -55,10 +56,7 @@ class PerceptronBot:
             midpoint[1] - self.flappy.player.cy,
         )
 
-    async def start(self):
-        print("Iniciando com perceptron")
-        last_score = 0
-
+    def initializeModel(self):
         # usa o primeiro par de features para inicializar classes
         if not self.trained:
             midpoint = self._get_midpoint_between_pipes()
@@ -67,11 +65,25 @@ class PerceptronBot:
             self.trained = True
             print("Perceptron inicializado com treinamento zero.")
 
+    def verifyInitialErrors(self, features):
+        if self.countInitialErrors > 5:
+            self.model.partial_fit([features], [0], classes=np.array([0, 1]))
+            self.countInitialErrors = 0
+            print("Perceptron RESETADO")
+
+    async def start(self):
+        print("Iniciando com perceptron")
+        last_score = 0
+
+        self.initializeModel()
+
         while True:
             # Certifique-se que o jogo esteja rodando
             if hasattr(self.flappy, "player") and hasattr(self.flappy, "pipes"):
                 midpoint = self._get_midpoint_between_pipes()
                 features = self._get_distance_to_midpoint(midpoint)
+
+                self.verifyInitialErrors(features)
 
                 decision = self.model.predict([features])[0]
 
@@ -88,6 +100,7 @@ class PerceptronBot:
                     )
                     and self.flappy.score.score == 0
                 ):
+                    self.countInitialErrors += 1
                     if self.flappy.isTraining():
                         correct = int(not self.last_decision)
                         self.update_model(self.last_features, correct)
