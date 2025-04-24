@@ -58,14 +58,20 @@ class PerceptronBot:
     async def start(self):
         print("Iniciando com perceptron")
         last_score = 0
+
+        # usa o primeiro par de features para inicializar classes
+        if not self.trained:
+            midpoint = self._get_midpoint_between_pipes()
+            features = self._get_distance_to_midpoint(midpoint)
+            self.model.partial_fit([features], [0], classes=np.array([0, 1]))
+            self.trained = True
+            print("Perceptron inicializado com treinamento zero.")
+
         while True:
             # Certifique-se que o jogo esteja rodando
             if hasattr(self.flappy, "player") and hasattr(self.flappy, "pipes"):
                 midpoint = self._get_midpoint_between_pipes()
                 features = self._get_distance_to_midpoint(midpoint)
-
-                if not self.trained:
-                    self.update_model(features, 1)
 
                 decision = self.model.predict([features])[0]
 
@@ -76,16 +82,16 @@ class PerceptronBot:
                 self.last_decision = decision
 
                 # Se o jogo acabar, treina e reinicia automaticamente
-                if self.flappy.player.collided(
-                    self.flappy.pipes, self.flappy.floor
+                if (
+                    self.flappy.player.collided(
+                        self.flappy.pipes, self.flappy.floor
+                    )
+                    and self.flappy.score.score == 0
                 ):
-                    if (
-                        self.flappy.score.score == 0
-                    ) and self.flappy.isTraining():
-                        print("Salvando modelo")
-                        correct_decision = int(not self.last_decision)
-                        self.update_model(self.last_features, correct_decision)
-                    # Aguarda a reinicialização do jogo automaticamente
+                    if self.flappy.isTraining():
+                        correct = int(not self.last_decision)
+                        self.update_model(self.last_features, correct)
+                    # Reinicia o jogo
                     if self.flappy.isTraining():
                         await asyncio.sleep(0.1)
                     else:
@@ -93,9 +99,10 @@ class PerceptronBot:
                     self._flap()
                 elif last_score < self.flappy.score.score:
                     if self.flappy.isTraining():
-                        print("Salvando modelo")
-                        correct_decision = int(self.last_decision)
-                        self.update_model(self.last_features, correct_decision)
+                        print("Aprendendo da última ação bem-sucedida")
+                        self.update_model(
+                            self.last_features, self.last_decision
+                        )
                     last_score = self.flappy.score.score
 
             await asyncio.sleep(0.001)
